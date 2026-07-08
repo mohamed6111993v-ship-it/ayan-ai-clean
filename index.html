@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>AYAN AI — منصة إدارة العيادات</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -240,33 +241,27 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     </div>
 
     <h1 class="login-title">مرحباً بك 👋</h1>
-    <p class="login-sub">اختر دورك للدخول للمنصة</p>
+    <p class="login-sub">سجّل دخولك لمنصة AYAN AI</p>
 
-    <div class="demo-roles">
-      <div class="role-card selected" onclick="selectRole(this,'owner','محمد الأحمد','مالك المركز','#00D4AA')">
-        <div class="role-icon">🧑‍💼</div>
-        <div class="role-name">محمد الأحمد</div>
-        <div class="role-title">مالك المركز</div>
+    <div id="login-form">
+      <div class="mf" style="margin-bottom:13px">
+        <label class="ml">البريد الإلكتروني</label>
+        <input class="mi" id="inp-email" type="email" placeholder="email@clinic.com" style="direction:ltr;width:100%;font-size:var(--sm)">
       </div>
-      <div class="role-card" onclick="selectRole(this,'manager','سارة المدير','مديرة العمليات','#3B82F6')">
-        <div class="role-icon">👩‍💼</div>
-        <div class="role-name">سارة المدير</div>
-        <div class="role-title">مديرة العمليات</div>
+      <div class="mf" style="margin-bottom:18px">
+        <label class="ml">كلمة المرور</label>
+        <input class="mi" id="inp-pass" type="password" placeholder="••••••••" style="width:100%;font-size:var(--sm)">
       </div>
-      <div class="role-card" onclick="selectRole(this,'doctor','د. خالد النور','طبيب أسنان','#10B981')">
-        <div class="role-icon">🩺</div>
-        <div class="role-name">د. خالد</div>
-        <div class="role-title">طبيب أسنان</div>
-      </div>
-      <div class="role-card" onclick="selectRole(this,'receptionist','نورة','موظفة استقبال','#F59E0B')">
-        <div class="role-icon">💁‍♀️</div>
-        <div class="role-name">نورة</div>
-        <div class="role-title">موظفة استقبال</div>
-      </div>
+      <button class="btn-demo" id="btn-login" onclick="doLogin()">🔐 تسجيل الدخول</button>
     </div>
 
-    <button class="btn-demo" onclick="demoLogin()">🚀 دخول للمنصة</button>
-    <p class="login-note">نسخة تجريبية — البيانات للعرض فقط</p>
+    <div style="margin-top:14px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);font-size:var(--xs);color:var(--text2);line-height:1.8">
+      <b style="color:var(--teal)">أول مرة؟</b> أنشئ حساب admin:<br>
+      <span style="direction:ltr;display:block;margin-top:4px">Email: admin@clinic.com<br>Password: أي كلمة مرور</span>
+      <button onclick="doRegister()" style="margin-top:8px;background:none;border:1px solid var(--border);border-radius:20px;color:var(--text2);font-family:var(--font);font-size:.62rem;padding:4px 10px;cursor:pointer;width:100%">إنشاء حساب Owner جديد</button>
+    </div>
+
+    <p class="login-note">متصل بـ Supabase · bjcjebdnnvhohstozfc</p>
   </div>
 </div>
 
@@ -519,91 +514,409 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 
 <script>
 // ════════════════════════════════════
-// AYAN AI — Demo Mode (بدون Auth)
+// AYAN AI — Supabase Integration
+// Project: bjcjebdnnvhohstozfc
 // ════════════════════════════════════
 
+const SB_URL = 'https://bjcjebdnnvhohstozfc.supabase.co';
+const SB_KEY = 'sb_publishable_8EfpjGCys_PbrHyZFp1Iew_P3nAzjcd';
 const COLORS = ['#00D4AA','#3B82F6','#10B981','#F59E0B','#8B5CF6','#EF4444'];
 
-// ── بيانات تجريبية ──
-let PATIENTS = [
-  {id:1,name:'محمد عبدالله',phone:'0501234567',dob:'1995-03-15',gender:'male',blood:'O+',code:'P-00001'},
-  {id:2,name:'فاطمة الزهراء',phone:'0509876543',dob:'1990-07-22',gender:'female',blood:'A+',code:'P-00002'},
-  {id:3,name:'نورة السعد',phone:'0512345678',dob:'1997-11-08',gender:'female',blood:'B+',code:'P-00003'},
-  {id:4,name:'خالد الرشيدي',phone:'0556781234',dob:'1980-05-30',gender:'male',blood:'AB+',code:'P-00004'},
-  {id:5,name:'عمر الحربي',phone:'0561234567',dob:'1993-09-12',gender:'male',blood:'O-',code:'P-00005'},
-  {id:6,name:'هند الأحمد',phone:'0571234567',dob:'2002-01-20',gender:'female',blood:'A-',code:'P-00006'},
-  {id:7,name:'سلمى الغامدي',phone:'0581234567',dob:'1988-06-14',gender:'female',blood:'B-',code:'P-00007'},
-  {id:8,name:'بدر الزهراني',phone:'0591234567',dob:'1972-12-03',gender:'male',blood:'O+',code:'P-00008'},
+let sb = null;
+let CLINIC_ID = null;
+let currentUser = null;
+
+// ── INIT SUPABASE ──
+function initSB(){
+  sb = supabase.createClient(SB_URL, SB_KEY, {
+    auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:false}
+  });
+}
+
+// ── بيانات تجريبية للعرض ──
+const DEMO_PATIENTS = [
+  {id:1,name:'محمد عبدالله',phone:'0501234567',dob:'1995-03-15',blood:'O+',code:'P-00001'},
+  {id:2,name:'فاطمة الزهراء',phone:'0509876543',dob:'1990-07-22',blood:'A+',code:'P-00002'},
+  {id:3,name:'نورة السعد',phone:'0512345678',dob:'1997-11-08',blood:'B+',code:'P-00003'},
+  {id:4,name:'خالد الرشيدي',phone:'0556781234',dob:'1980-05-30',blood:'AB+',code:'P-00004'},
+  {id:5,name:'عمر الحربي',phone:'0561234567',dob:'1993-09-12',blood:'O-',code:'P-00005'},
 ];
 
-let APPTS = [
-  {id:1,time:'09:00',name:'محمد عبدالله',doctor:'د. خالد النور',service:'تنظيف أسنان',status:'done'},
-  {id:2,time:'10:30',name:'فاطمة الزهراء',doctor:'د. خالد النور',service:'تقويم أسنان',status:'confirmed'},
-  {id:3,time:'12:00',name:'نورة السعد',doctor:'د. أحمد السالم',service:'زراعة أسنان',status:'confirmed'},
-  {id:4,time:'14:00',name:'خالد الرشيدي',doctor:'د. خالد النور',service:'تجميل',status:'pending'},
-  {id:5,time:'15:30',name:'عمر الحربي',doctor:'د. أحمد السالم',service:'فحص دوري',status:'confirmed'},
-  {id:6,time:'16:00',name:'هند الأحمد',doctor:'د. سارة الرشيد',service:'تبييض',status:'pending'},
-  {id:7,time:'16:45',name:'سلمى الغامدي',doctor:'د. خالد النور',service:'حشو',status:'confirmed'},
-  {id:8,time:'17:30',name:'بدر الزهراني',doctor:'د. أحمد السالم',service:'خلع',status:'confirmed'},
+const DEMO_APPTS = [
+  {id:1,time:'09:00',name:'محمد عبدالله',doctor:'د. خالد',service:'تنظيف أسنان',status:'done'},
+  {id:2,time:'10:30',name:'فاطمة الزهراء',doctor:'د. خالد',service:'تقويم',status:'confirmed'},
+  {id:3,time:'12:00',name:'نورة السعد',doctor:'د. أحمد',service:'زراعة',status:'confirmed'},
+  {id:4,time:'14:00',name:'خالد الرشيدي',doctor:'د. خالد',service:'تجميل',status:'pending'},
+  {id:5,time:'15:30',name:'عمر الحربي',doctor:'د. أحمد',service:'فحص دوري',status:'confirmed'},
 ];
 
-const DOCTORS = [
-  {name:'د. خالد النور',spec:'أسنان عام + تقويم',exp:'8 سنوات',patients:342,rating:4.9},
-  {name:'د. أحمد السالم',spec:'زراعة + جراحة فموية',exp:'12 سنة',patients:287,rating:4.8},
-  {name:'د. سارة الرشيد',spec:'تجميل + تبييض',exp:'6 سنوات',patients:198,rating:4.9},
-  {name:'د. ليلى الشمري',spec:'أسنان أطفال',exp:'5 سنوات',patients:156,rating:4.7},
-  {name:'د. فهد المطيري',spec:'أمراض اللثة',exp:'9 سنوات',patients:203,rating:4.8},
+const DEMO_DOCTORS = [
+  {name:'د. خالد النور',spec:'أسنان عام',exp:'8 سنوات',patients:342,rating:4.9},
+  {name:'د. أحمد السالم',spec:'زراعة',exp:'12 سنة',patients:287,rating:4.8},
+  {name:'د. سارة الرشيد',spec:'تجميل',exp:'6 سنوات',patients:198,rating:4.9},
 ];
 
+let PATIENTS = [...DEMO_PATIENTS];
+let APPTS = [...DEMO_APPTS];
+let DOCTORS = [...DEMO_DOCTORS];
 let INVOICES = [
   {num:'INV-0127',name:'محمد عبدالله',amount:350,method:'card',date:'اليوم',status:'paid'},
   {num:'INV-0126',name:'فاطمة الزهراء',amount:1200,method:'insurance',date:'اليوم',status:'pending'},
   {num:'INV-0125',name:'نورة السعد',amount:750,method:'cash',date:'أمس',status:'paid'},
-  {num:'INV-0124',name:'خالد الرشيدي',amount:500,method:'mada',date:'أمس',status:'paid'},
-  {num:'INV-0123',name:'عمر الحربي',amount:280,method:'cash',date:'3 أيام',status:'pending'},
 ];
-
 let SPECS = [
   {name:'طب الأسنان العام',icon:'🦷',dur:30,online:true},
   {name:'تقويم الأسنان',icon:'😁',dur:45,online:true},
   {name:'زراعة الأسنان',icon:'🔩',dur:90,online:false},
   {name:'تجميل الأسنان',icon:'✨',dur:60,online:true},
   {name:'أسنان الأطفال',icon:'👶',dur:30,online:true},
-  {name:'أمراض اللثة',icon:'🩸',dur:45,online:true},
 ];
 
-// ── حالة المستخدم الحالي ──
-let currentUser = {role:'owner',name:'محمد الأحمد',title:'مالك المركز',color:'#00D4AA'};
+// ════ AUTH ════
 
-// ── اختيار الدور ──
-function selectRole(el, role, name, title, color){
-  document.querySelectorAll('.role-card').forEach(c=>c.classList.remove('selected'));
-  el.classList.add('selected');
-  currentUser = {role, name, title, color};
+async function doLogin(){
+  const email = document.getElementById('inp-email').value.trim();
+  const pass  = document.getElementById('inp-pass').value;
+  if(!email||!pass){toast('أدخل البريد وكلمة المرور','err');return;}
+  const btn = document.getElementById('btn-login');
+  btn.textContent='⏳ جاري الدخول...'; btn.disabled=true;
+  try{
+    const {data,error} = await sb.auth.signInWithPassword({email,password:pass});
+    if(error) throw error;
+    await afterLogin(data.user);
+  }catch(e){
+    toast('❌ '+e.message,'err');
+    btn.textContent='🔐 تسجيل الدخول'; btn.disabled=false;
+  }
 }
 
-// ── دخول تجريبي ──
-function demoLogin(){
-  document.getElementById('sb-av').textContent = currentUser.name[0];
-  document.getElementById('sb-av').style.background = currentUser.color;
-  document.getElementById('sb-name').textContent = currentUser.name;
-  document.getElementById('sb-role').textContent = currentUser.title;
-  document.getElementById('set-name-val').textContent = currentUser.name;
-  document.getElementById('set-role-val').textContent = currentUser.title;
+async function doRegister(){
+  const email = document.getElementById('inp-email').value.trim();
+  const pass  = document.getElementById('inp-pass').value;
+  if(!email||!pass){toast('أدخل البريد وكلمة المرور أولاً','err');return;}
+  if(pass.length<6){toast('كلمة المرور 6 أحرف على الأقل','err');return;}
+  const btn = document.getElementById('btn-login');
+  btn.textContent='⏳ جاري إنشاء الحساب...'; btn.disabled=true;
+  try{
+    const {data,error} = await sb.auth.signUp({
+      email, password:pass,
+      options:{ data:{name:'Admin', role:'owner'} }
+    });
+    if(error) throw error;
+    if(data.user && !data.session){
+      toast('📧 تحقق من بريدك لتفعيل الحساب','inf');
+      btn.textContent='🔐 تسجيل الدخول'; btn.disabled=false;
+    } else if(data.session){
+      await afterLogin(data.user);
+    }
+  }catch(e){
+    toast('❌ '+e.message,'err');
+    btn.textContent='🔐 تسجيل الدخول'; btn.disabled=false;
+  }
+}
+
+async function afterLogin(user){
+  currentUser = user;
+  // جلب بيانات المستخدم من جدول users
+  const {data:prof} = await sb
+    .from('users')
+    .select('*,clinics(name,city)')
+    .eq('auth_id', user.id)
+    .single();
+
+  let name = user.user_metadata?.name || user.email.split('@')[0];
+  let role = 'owner';
+  let clinicName = 'مركزك الطبي';
+
+  if(prof){
+    name = prof.name || name;
+    role = prof.role || role;
+    CLINIC_ID = prof.clinic_id;
+    clinicName = prof.clinics?.name || clinicName;
+    // جلب بيانات حقيقية
+    await loadRealData();
+  } else {
+    // مستخدم جديد — أنشئ عيادة وملف تلقائياً
+    await createFirstClinic(user, name);
+  }
+
+  document.getElementById('sb-av').textContent = name[0].toUpperCase();
+  document.getElementById('sb-name').textContent = name;
+  document.getElementById('sb-role').textContent = roleLabel(role);
+  document.getElementById('center-name').textContent = clinicName;
+  document.getElementById('set-name-val').textContent = name;
+  document.getElementById('set-role-val').textContent = roleLabel(role);
+
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-app').classList.add('active');
+  toast('مرحباً '+name.split(' ')[0]+' ✅','ok');
   renderDash();
-  toast('مرحباً '+currentUser.name.split(' ')[0]+' 👋','ok');
 }
 
-function doLogout(){
+function roleLabel(r){
+  const m={owner:'مالك المركز',manager:'مدير',doctor:'طبيب',receptionist:'استقبال',accountant:'محاسب'};
+  return m[r]||r;
+}
+
+async function createFirstClinic(user, name){
+  // أنشئ عيادة
+  const {data:clinic} = await sb.from('clinics').insert({
+    name:'مركزي الطبي',city:'الرياض',country:'SA',
+    plan:'starter',status:'trial',
+    owner_auth_id:user.id
+  }).select().single();
+
+  if(clinic){
+    CLINIC_ID = clinic.id;
+    // أنشئ ملف المستخدم
+    await sb.from('users').insert({
+      auth_id:user.id, clinic_id:clinic.id,
+      name:name, email:user.email,
+      role:'owner', status:'active'
+    });
+    // أنشئ تخصصات افتراضية
+    await sb.from('specialties').insert([
+      {clinic_id:clinic.id,name:'طب الأسنان العام',icon:'🦷',duration:30,online_booking:true},
+      {clinic_id:clinic.id,name:'تقويم الأسنان',icon:'😁',duration:45,online_booking:true},
+    ]);
+    document.getElementById('center-name').textContent = clinic.name;
+    toast('✅ تم إنشاء مركزك الطبي','ok');
+  }
+}
+
+async function doLogout(){
+  await sb?.auth.signOut();
+  currentUser=null; CLINIC_ID=null;
+  // أعد البيانات التجريبية
+  PATIENTS=[...DEMO_PATIENTS]; APPTS=[...DEMO_APPTS]; DOCTORS=[...DEMO_DOCTORS];
   document.getElementById('screen-app').classList.remove('active');
   document.getElementById('screen-login').classList.add('active');
+  document.getElementById('btn-login').textContent='🔐 تسجيل الدخول';
+  document.getElementById('btn-login').disabled=false;
   toast('تم تسجيل الخروج','inf');
 }
 
-// ── التنقل بين الصفحات ──
-function goto(id, el){
+// ════ REAL DATA ════
+
+async function loadRealData(){
+  if(!CLINIC_ID) return;
+  try{
+    // جلب المرضى
+    const {data:pts} = await sb.from('patients').select('*').eq('clinic_id',CLINIC_ID).order('created_at',{ascending:false});
+    if(pts?.length){
+      PATIENTS = pts.map((p,i)=>({
+        id:p.id,name:p.name,phone:p.phone||'—',
+        dob:p.dob||'2000-01-01',blood:p.blood_type||'—',
+        code:p.patient_code||'P-'+String(i+1).padStart(5,'0')
+      }));
+    }
+    // جلب المواعيد
+    const today = new Date().toISOString().split('T')[0];
+    const {data:appts} = await sb.from('appointments')
+      .select('*,patients(name)')
+      .eq('clinic_id',CLINIC_ID)
+      .gte('scheduled_at',today+'T00:00:00')
+      .order('scheduled_at',{ascending:true}).limit(20);
+    if(appts?.length){
+      APPTS = appts.map(a=>({
+        id:a.id,
+        time:new Date(a.scheduled_at).toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'}),
+        name:a.patients?.name||'—',
+        doctor:a.doctor_name||'—',
+        service:a.service_name||'موعد طبي',
+        status:a.status
+      }));
+    }
+    // جلب الأطباء
+    const {data:docs} = await sb.from('users').select('*').eq('clinic_id',CLINIC_ID).eq('role','doctor');
+    if(docs?.length){
+      DOCTORS = docs.map(d=>({
+        name:d.name,spec:d.specialty||'طبيب',exp:d.experience||'—',
+        patients:d.patients_count||0,rating:d.rating||5.0
+      }));
+    }
+    // جلب الفواتير
+    const {data:invs} = await sb.from('invoices')
+      .select('*,patients(name)').eq('clinic_id',CLINIC_ID)
+      .order('created_at',{ascending:false}).limit(20);
+    if(invs?.length){
+      INVOICES = invs.map(v=>({
+        num:v.invoice_number||'INV-'+v.id,
+        name:v.patients?.name||'—',
+        amount:Number(v.final_amount||0),
+        method:v.payment_method||'—',
+        date:new Date(v.created_at).toLocaleDateString('ar'),
+        status:v.status
+      }));
+    }
+    // جلب التخصصات
+    const {data:specs} = await sb.from('specialties').select('*').eq('clinic_id',CLINIC_ID);
+    if(specs?.length){
+      SPECS = specs.map(s=>({
+        id:s.id,name:s.name,icon:s.icon||'🏥',
+        dur:s.duration||30,online:s.online_booking||false
+      }));
+    }
+  }catch(e){ console.warn('loadRealData:',e.message); }
+}
+
+// ════ CRUD مع Supabase ════
+
+async function savePatient(){
+  const n=document.getElementById('p-name').value.trim();
+  const ph=document.getElementById('p-phone').value.trim();
+  if(!n||!ph){toast('الاسم والجوال مطلوبان','err');return;}
+
+  if(CLINIC_ID && sb){
+    // حفظ حقيقي
+    const code='P-'+Date.now().toString().slice(-5);
+    const {data,error}=await sb.from('patients').insert({
+      clinic_id:CLINIC_ID,name:n,phone:ph,
+      patient_code:code,
+      dob:document.getElementById('p-dob').value||null,
+      gender:document.getElementById('p-gender').value,
+      blood_type:document.getElementById('p-blood').value,
+      notes:document.getElementById('p-notes').value||null
+    }).select().single();
+    if(error){toast('❌ '+error.message,'err');return;}
+    PATIENTS.unshift({id:data.id,name:n,phone:ph,dob:data.dob||'2000-01-01',blood:data.blood_type,code});
+    toast('✅ تم حفظ المريض في قاعدة البيانات','ok');
+  } else {
+    // Demo
+    const id=PATIENTS.length+1;
+    PATIENTS.unshift({id,name:n,phone:ph,dob:document.getElementById('p-dob').value||'2000-01-01',blood:document.getElementById('p-blood').value,code:'P-'+String(id).padStart(5,'0')});
+    toast('✅ تم إضافة المريض (Demo)','ok');
+  }
+  closeM('m-patient');
+  ['p-name','p-phone','p-notes'].forEach(id=>document.getElementById(id).value='');
+  renderPatients(); renderDash();
+}
+
+async function saveAppt(){
+  const n=document.getElementById('a-name').value.trim();
+  const d=document.getElementById('a-date').value;
+  const t=document.getElementById('a-time').value;
+  if(!n||!d||!t){toast('جميع الحقول مطلوبة','err');return;}
+
+  if(CLINIC_ID && sb){
+    // ابحث عن المريض
+    const {data:pt}=await sb.from('patients').select('id').eq('clinic_id',CLINIC_ID).ilike('name','%'+n+'%').single();
+    const {error}=await sb.from('appointments').insert({
+      clinic_id:CLINIC_ID,
+      patient_id:pt?.id||null,
+      scheduled_at:`${d}T${t}:00`,
+      doctor_name:document.getElementById('a-doc').value,
+      service_name:document.getElementById('a-service').value||'موعد طبي',
+      status:'confirmed'
+    });
+    if(error){toast('❌ '+error.message,'err');return;}
+    toast('✅ تم حجز الموعد في قاعدة البيانات','ok');
+  } else {
+    APPTS.unshift({id:APPTS.length+1,time:t,name:n,doctor:document.getElementById('a-doc').value,service:document.getElementById('a-service').value||'موعد طبي',status:'confirmed'});
+    toast('✅ تم حجز الموعد (Demo)','ok');
+  }
+  closeM('m-appt');
+  document.getElementById('a-name').value='';
+  document.getElementById('a-service').value='';
+  renderAppts(); renderDash();
+}
+
+async function saveInvoice(){
+  const n=document.getElementById('i-name').value.trim();
+  const a=Number(document.getElementById('i-amount').value);
+  if(!a){toast('المبلغ مطلوب','err');return;}
+
+  const num='INV-'+String(INVOICES.length+100).padStart(4,'0');
+  if(CLINIC_ID && sb){
+    const {data:pt}=await sb.from('patients').select('id').eq('clinic_id',CLINIC_ID).ilike('name','%'+(n||'')+'%').single();
+    const {error}=await sb.from('invoices').insert({
+      clinic_id:CLINIC_ID,
+      invoice_number:num,
+      patient_id:pt?.id||null,
+      items:[{name:document.getElementById('i-service').value||'خدمة طبية',price:a}],
+      total_amount:a,final_amount:a,
+      payment_method:document.getElementById('i-method').value,
+      status:'pending'
+    });
+    if(error){toast('❌ '+error.message,'err');return;}
+    toast('✅ تم إصدار الفاتورة في قاعدة البيانات','ok');
+  } else {
+    INVOICES.unshift({num,name:n||'مريض',amount:a,method:document.getElementById('i-method').value,date:'اليوم',status:'pending'});
+    toast('✅ تم إصدار الفاتورة (Demo)','ok');
+  }
+  closeM('m-invoice');
+  document.getElementById('i-name').value='';
+  document.getElementById('i-amount').value='';
+  renderInvoices();
+}
+
+async function saveSpec(){
+  const n=document.getElementById('sp-name').value.trim();
+  if(!n){toast('اسم التخصص مطلوب','err');return;}
+  const icon=document.getElementById('sp-icon').value||'🏥';
+  const dur=Number(document.getElementById('sp-dur').value)||30;
+
+  if(CLINIC_ID && sb){
+    const {error}=await sb.from('specialties').insert({
+      clinic_id:CLINIC_ID,name:n,icon,duration:dur,online_booking:true
+    });
+    if(error){toast('❌ '+error.message,'err');return;}
+    toast('✅ تم إضافة التخصص في قاعدة البيانات','ok');
+  } else {
+    toast('✅ تم إضافة التخصص (Demo)','ok');
+  }
+  SPECS.push({name:n,icon,dur,online:true});
+  closeM('m-spec');
+  document.getElementById('sp-name').value='';
+  renderSpecs();
+}
+
+async function deleteSpec(i){
+  if(!confirm('حذف هذا التخصص؟'))return;
+  const spec=SPECS[i];
+  if(CLINIC_ID && sb && spec.id){
+    await sb.from('specialties').delete().eq('id',spec.id);
+  }
+  SPECS.splice(i,1);
+  toast('تم الحذف','inf'); renderSpecs();
+}
+
+async function saveDoctor(){
+  const n=document.getElementById('d-name').value.trim();
+  if(!n){toast('اسم الطبيب مطلوب','err');return;}
+  const spec=document.getElementById('d-spec').value;
+  const exp=document.getElementById('d-exp').value;
+  const phone=document.getElementById('d-phone').value;
+
+  if(CLINIC_ID && sb){
+    const {error}=await sb.from('users').insert({
+      clinic_id:CLINIC_ID,name:n,phone,
+      email:n.replace(/\s/g,'').toLowerCase()+'@clinic.com',
+      role:'doctor',specialty:spec,experience:exp+' سنوات',
+      status:'active',password_hash:'pending'
+    });
+    if(error){toast('❌ '+error.message,'err');return;}
+    toast('✅ تم إضافة الطبيب في قاعدة البيانات','ok');
+  } else {
+    toast('✅ تم إضافة الطبيب (Demo)','ok');
+  }
+  DOCTORS.push({name:n,spec,exp:exp+' سنوات',patients:0,rating:5.0});
+  closeM('m-doctor');
+  document.getElementById('d-name').value='';
+  renderDoctors();
+}
+
+function cancelAppt(id){
+  if(!confirm('إلغاء هذا الموعد؟'))return;
+  const a=APPTS.find(x=>x.id===id);
+  if(a)a.status='cancelled';
+  if(CLINIC_ID && sb) sb.from('appointments').update({status:'cancelled'}).eq('id',id).then(()=>{});
+  renderAppts(); toast('تم إلغاء الموعد','inf');
+}
+
+// ════ RENDER ════
+
+function goto(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('on'));
   document.getElementById('page-'+id)?.classList.add('on');
@@ -612,14 +925,12 @@ function goto(id, el){
   if(fn[id]) fn[id]();
 }
 
-// ── MODAL ──
 function openM(id){document.getElementById(id).classList.add('open')}
 function closeM(id){document.getElementById(id).classList.remove('open')}
 document.querySelectorAll('.overlay').forEach(o=>{
   o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')});
 });
 
-// ── TOAST ──
 let _tt;
 function toast(msg,type='inf'){
   const t=document.getElementById('toast');
@@ -627,31 +938,29 @@ function toast(msg,type='inf'){
   clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),3500);
 }
 
-// ── DASHBOARD ──
 function renderDash(){
-  // مواعيد اليوم
   const sm={confirmed:'bg',done:'bb',pending:'ba',cancelled:'br'};
   const sl={confirmed:'مؤكد',done:'انتهى',pending:'انتظار',cancelled:'ملغي'};
-  document.getElementById('dash-appts').innerHTML = APPTS.slice(0,5).map(a=>`
+  document.getElementById('dash-appts').innerHTML=APPTS.slice(0,5).map(a=>`
     <div class="srow">
       <span class="stime">${a.time}</span>
       <div class="sinfo"><div class="sname">${a.name}</div><div class="ssub">${a.service} · ${a.doctor}</div></div>
       <span class="badge ${sm[a.status]||'ba'}">${sl[a.status]||a.status}</span>
     </div>`).join('');
-  // آخر المرضى
-  document.getElementById('dash-pts').innerHTML = PATIENTS.slice(0,5).map((p,i)=>`
+  document.getElementById('dash-pts').innerHTML=PATIENTS.slice(0,5).map((p,i)=>`
     <div class="srow">
       <div class="av" style="background:${COLORS[i%6]}">${p.name[0]}</div>
       <div class="sinfo"><div class="sname">${p.name}</div><div class="ssub" style="direction:ltr">${p.phone}</div></div>
       <span class="badge br">${p.blood}</span>
     </div>`).join('');
+  document.getElementById('badge-pts').textContent=PATIENTS.length;
+  document.getElementById('badge-appts').textContent=APPTS.length;
 }
 
-// ── PATIENTS ──
 let ptsFilter='';
 function renderPatients(filter){
   if(filter!==undefined) ptsFilter=filter;
-  const data = ptsFilter ? PATIENTS.filter(p=>p.name.includes(ptsFilter)||p.phone.includes(ptsFilter)) : PATIENTS;
+  const data=ptsFilter?PATIENTS.filter(p=>p.name.includes(ptsFilter)||p.phone.includes(ptsFilter)):PATIENTS;
   document.getElementById('pts-count').textContent=`${data.length} مريض مسجّل`;
   document.getElementById('badge-pts').textContent=PATIENTS.length;
   if(!data.length){
@@ -659,11 +968,11 @@ function renderPatients(filter){
     return;
   }
   document.getElementById('pts-body').innerHTML=data.map((p,i)=>{
-    const age=Math.floor((Date.now()-new Date(p.dob))/(365.25*24*3600*1000));
+    const age=p.dob?Math.floor((Date.now()-new Date(p.dob))/(365.25*24*3600*1000))+'س':'—';
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:${COLORS[i%6]}">${p.name[0]}</div><div style="font-weight:700">${p.name}</div></div></td>
       <td style="direction:ltr;color:var(--text2)">${p.phone}</td>
-      <td>${age} سنة</td>
+      <td>${age}</td>
       <td><span class="badge br">${p.blood}</span></td>
       <td style="font-family:var(--mono);font-size:.62rem;color:var(--text2)">${p.code}</td>
       <td><button class="btn btn-p" style="padding:3px 10px;font-size:.6rem" onclick="openM('m-appt')">📅 موعد</button></td>
@@ -672,20 +981,6 @@ function renderPatients(filter){
 }
 function filterPts(v){renderPatients(v)}
 
-function savePatient(){
-  const n=document.getElementById('p-name').value.trim();
-  const ph=document.getElementById('p-phone').value.trim();
-  if(!n||!ph){toast('الاسم والجوال مطلوبان','err');return;}
-  const id=PATIENTS.length+1;
-  PATIENTS.unshift({id,name:n,phone:ph,dob:document.getElementById('p-dob').value||'2000-01-01',gender:document.getElementById('p-gender').value,blood:document.getElementById('p-blood').value,code:'P-'+String(id).padStart(5,'0')});
-  closeM('m-patient');
-  ['p-name','p-phone','p-notes'].forEach(id=>document.getElementById(id).value='');
-  toast('✅ تم إضافة المريض','ok');
-  renderPatients();
-  renderDash();
-}
-
-// ── APPOINTMENTS ──
 function renderAppts(){
   const sm={confirmed:'bg',done:'bb',pending:'ba',cancelled:'br'};
   const sl={confirmed:'مؤكد',done:'انتهى',pending:'انتظار',cancelled:'ملغي'};
@@ -700,113 +995,57 @@ function renderAppts(){
   </tr>`).join('');
 }
 
-function cancelAppt(id){
-  if(!confirm('إلغاء هذا الموعد؟'))return;
-  const a=APPTS.find(x=>x.id===id);
-  if(a)a.status='cancelled';
-  renderAppts(); toast('تم إلغاء الموعد','inf');
-}
-
-function saveAppt(){
-  const n=document.getElementById('a-name').value.trim();
-  const d=document.getElementById('a-date').value;
-  const t=document.getElementById('a-time').value;
-  if(!n||!d||!t){toast('جميع الحقول مطلوبة','err');return;}
-  APPTS.unshift({id:APPTS.length+1,time:t,name:n,doctor:document.getElementById('a-doc').value,service:document.getElementById('a-service').value||'موعد طبي',status:'confirmed'});
-  closeM('m-appt');
-  document.getElementById('a-name').value='';
-  document.getElementById('a-service').value='';
-  toast('✅ تم حجز الموعد','ok');
-  renderAppts(); renderDash();
-}
-
-// ── DOCTORS ──
 function renderDoctors(){
   document.getElementById('doctors-grid').innerHTML=DOCTORS.map((d,i)=>`
-    <div class="panel">
-      <div class="panel-body">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px">
-          <div style="width:44px;height:44px;border-radius:12px;background:${COLORS[i%6]}18;display:flex;align-items:center;justify-content:center;font-size:1.3rem">🩺</div>
-          <div><div style="font-size:var(--md);font-weight:800">${d.name}</div><div style="font-size:.62rem;color:var(--text2)">${d.spec}</div></div>
-        </div>
-        <div class="stat"><span class="sk">الخبرة</span><span class="sv">${d.exp}</span></div>
-        <div class="stat"><span class="sk">المرضى</span><span class="sv" style="color:${COLORS[i%6]}">${d.patients}</span></div>
-        <div class="stat"><span class="sk">التقييم</span><span class="sv" style="color:var(--amber)">⭐ ${d.rating}</span></div>
+    <div class="panel"><div class="panel-body">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px">
+        <div style="width:44px;height:44px;border-radius:12px;background:${COLORS[i%6]}18;display:flex;align-items:center;justify-content:center;font-size:1.3rem">🩺</div>
+        <div><div style="font-size:var(--md);font-weight:800">${d.name}</div><div style="font-size:.62rem;color:var(--text2)">${d.spec}</div></div>
       </div>
-    </div>`).join('');
+      <div class="stat"><span class="sk">الخبرة</span><span class="sv">${d.exp}</span></div>
+      <div class="stat"><span class="sk">المرضى</span><span class="sv" style="color:${COLORS[i%6]}">${d.patients}</span></div>
+      <div class="stat"><span class="sk">التقييم</span><span class="sv" style="color:var(--amber)">⭐ ${d.rating}</span></div>
+    </div></div>`).join('');
 }
 
-function saveDoctor(){
-  const n=document.getElementById('d-name').value.trim();
-  if(!n){toast('اسم الطبيب مطلوب','err');return;}
-  DOCTORS.push({name:n,spec:document.getElementById('d-spec').value,exp:document.getElementById('d-exp').value+' سنوات',patients:0,rating:5.0});
-  closeM('m-doctor');
-  document.getElementById('d-name').value='';
-  toast('✅ تم إضافة الطبيب','ok');
-  renderDoctors();
-}
-
-// ── INVOICES ──
 function renderInvoices(){
   const sm={paid:'bg',pending:'ba',cancelled:'br',refunded:'bb'};
   const sl={paid:'مسدد',pending:'معلق',cancelled:'ملغي',refunded:'مرتجع'};
   document.getElementById('inv-body').innerHTML=INVOICES.map(v=>`<tr>
     <td style="font-family:var(--mono);font-weight:700;font-size:.65rem">${v.num}</td>
     <td style="font-weight:700">${v.name}</td>
-    <td style="color:var(--green);font-weight:700">${v.amount.toLocaleString('ar')} ر.س</td>
+    <td style="color:var(--green);font-weight:700">${Number(v.amount).toLocaleString('ar')} ر.س</td>
     <td>${v.method}</td>
     <td style="color:var(--text2)">${v.date}</td>
     <td><span class="badge ${sm[v.status]||'ba'}">${sl[v.status]||v.status}</span></td>
   </tr>`).join('');
 }
 
-function saveInvoice(){
-  const n=document.getElementById('i-name').value.trim();
-  const a=Number(document.getElementById('i-amount').value);
-  if(!a){toast('المبلغ مطلوب','err');return;}
-  const num='INV-'+String(INVOICES.length+100).padStart(4,'0');
-  INVOICES.unshift({num,name:n||'مريض',amount:a,method:document.getElementById('i-method').value,date:'اليوم',status:'pending'});
-  closeM('m-invoice');
-  document.getElementById('i-name').value='';
-  document.getElementById('i-amount').value='';
-  toast('✅ تم إصدار الفاتورة '+num,'ok');
-  renderInvoices();
-}
-
-// ── SPECIALTIES ──
 function renderSpecs(){
   document.getElementById('specs-grid').innerHTML=SPECS.map((s,i)=>`
-    <div class="panel">
-      <div class="panel-body">
-        <div style="font-size:2rem;margin-bottom:10px">${s.icon}</div>
-        <div style="font-size:var(--md);font-weight:800;margin-bottom:10px">${s.name}</div>
-        <div class="stat"><span class="sk">مدة الجلسة</span><span class="sv">${s.dur} دق</span></div>
-        <div class="stat"><span class="sk">الحجز أونلاين</span><span class="sv">${s.online?'✅':'❌'}</span></div>
-        <button class="btn btn-r" style="margin-top:10px;width:100%;justify-content:center;font-size:.6rem" onclick="deleteSpec(${i})">🗑️ حذف</button>
-      </div>
-    </div>`).join('');
-}
-
-function saveSpec(){
-  const n=document.getElementById('sp-name').value.trim();
-  if(!n){toast('اسم التخصص مطلوب','err');return;}
-  SPECS.push({name:n,icon:document.getElementById('sp-icon').value||'🏥',dur:Number(document.getElementById('sp-dur').value)||30,online:true});
-  closeM('m-spec');
-  document.getElementById('sp-name').value='';
-  toast('✅ تم إضافة التخصص','ok');
-  renderSpecs();
-}
-
-function deleteSpec(i){
-  if(!confirm('حذف هذا التخصص؟'))return;
-  SPECS.splice(i,1);
-  toast('تم الحذف','inf');
-  renderSpecs();
+    <div class="panel"><div class="panel-body">
+      <div style="font-size:2rem;margin-bottom:10px">${s.icon}</div>
+      <div style="font-size:var(--md);font-weight:800;margin-bottom:10px">${s.name}</div>
+      <div class="stat"><span class="sk">مدة الجلسة</span><span class="sv">${s.dur} دق</span></div>
+      <div class="stat"><span class="sk">الحجز أونلاين</span><span class="sv">${s.online?'✅':'❌'}</span></div>
+      <button class="btn btn-r" style="margin-top:10px;width:100%;justify-content:center;font-size:.6rem" onclick="deleteSpec(${i})">🗑️ حذف</button>
+    </div></div>`).join('');
 }
 
 // ── INIT ──
-window.addEventListener('load',()=>{
-  renderDash();
+window.addEventListener('load', async()=>{
+  initSB();
+  // تحقق من جلسة موجودة
+  const {data:{session}} = await sb.auth.getSession();
+  if(session){
+    await afterLogin(session.user);
+  }
+  // استمع لتغييرات Auth
+  sb.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='SIGNED_IN' && session && !currentUser){
+      await afterLogin(session.user);
+    }
+  });
 });
 </script>
 </body>
