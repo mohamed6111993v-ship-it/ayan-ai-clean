@@ -494,14 +494,17 @@ let USR = null; // user object
 
 // ── REST ──
 async function api(method, url, body){
-  const h = {'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(TOK||KEY)};
-  if(method!=='GET' && method!=='DELETE') h['Prefer']='return=representation';
-  const r = await fetch(url,{method,headers:h,body:body?JSON.stringify(body):undefined});
+  // sb_publishable_ يذهب في apikey فقط — لا يجوز في Authorization:Bearer
+  // Authorization:Bearer يُستخدم فقط مع user JWT بعد تسجيل الدخول
+  const h = {'Content-Type':'application/json','apikey':KEY};
+  if(TOK) h['Authorization']='Bearer '+TOK;
+  if(method!=='GET'&&method!=='DELETE') h['Prefer']='return=representation';
+  const r=await fetch(url,{method,headers:h,body:body?JSON.stringify(body):undefined});
   if(!r.ok){
-    const e = await r.json().catch(()=>({}));
-    throw new Error(e.error_description||e.message||e.msg||r.statusText||'خطأ');
+    let e={};try{e=await r.json();}catch(_){}
+    throw new Error(e.error_description||e.error||e.message||e.msg||`HTTP ${r.status}`);
   }
-  if(r.status===204) return null;
+  if(r.status===204)return null;
   return r.json().catch(()=>null);
 }
 const GET  = (t,q='') => api('GET', `${RU}/${t}${q?'?'+q:''}`);
@@ -519,15 +522,17 @@ async function doLogin(){
   const b=document.getElementById('lb');
   b.textContent='جاري الدخول...';b.disabled=true;setErr('');
   try{
+    console.log('Login URL:', `${AU}/token?grant_type=password`);
     const d = await api('POST',`${AU}/token?grant_type=password`,{email:em,password:pw});
     TOK=d.access_token; USR=d.user; UID=d.user.id;
     localStorage.setItem('_ayan',JSON.stringify({t:TOK,u:USR}));
     await boot();
   }catch(e){
     let m=e.message;
-    if(m.includes('fetch')||m.includes('network')) m='فشل الاتصال — تحقق من Site URL في Supabase';
-    if(m.includes('invalid')||m.includes('credentials')) m='بريد أو كلمة مرور خاطئة';
-    if(m.includes('confirmed')) m='فعّل حسابك من البريد الإلكتروني أولاً';
+    if(m.includes('Failed to fetch')||m.includes('NetworkError')||m.includes('Load failed')) m='فشل الاتصال بالشبكة — تحقق من اتصال الإنترنت';
+    if(m.toLowerCase().includes('invalid')||m.includes('credentials')||m.includes('grant')) m='بريد أو كلمة مرور خاطئة';
+    if(m.includes('confirmed')||m.includes('not confirmed')) m='فعّل حسابك من البريد الإلكتروني أولاً';
+    if(m.includes('429')||m.includes('rate')) m='محاولات كثيرة — انتظر دقيقة';
     setErr(m);
     b.textContent='دخول';b.disabled=false;
   }
